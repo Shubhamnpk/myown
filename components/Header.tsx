@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { logout, getCurrentUser, isGuest } from "@/utils/userManagement"
-import { SettingsModal } from "./SettingsModal"
 import { AccountModal } from "./AccountModal"
 import { User, Settings, LogOut } from "lucide-react"
 import {
@@ -33,7 +32,6 @@ interface UserDetails {
 }
 
 export function Header() {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false)
   const router = useRouter()
@@ -103,7 +101,7 @@ export function Header() {
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
                   {profilePic ? (
-                    <AvatarImage src={profilePic} alt={userDetails?.name || user?.name || ""} />
+                    <AvatarImage src={profilePic || "/placeholder.svg"} alt={userDetails?.name || user?.name || ""} />
                   ) : (
                     <AvatarFallback>
                       {userDetails?.name
@@ -132,7 +130,7 @@ export function Header() {
                 <User className="mr-2 h-4 w-4" />
                 <span>Account</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
+              <DropdownMenuItem onClick={() => router.push("/settings")}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
@@ -145,7 +143,6 @@ export function Header() {
           </DropdownMenu>
         </div>
       </div>
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <AccountModal
         isOpen={isAccountModalOpen}
         onClose={() => setIsAccountModalOpen(false)}
