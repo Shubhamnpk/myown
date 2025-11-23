@@ -109,11 +109,6 @@ export function ResizablePopup({
   const popupId = useRef(`popup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`).current
   const [currentZIndex, setCurrentZIndex] = useState(initialZIndex)
 
-  // Update z-index when the component mounts or when it's focused
-  useEffect(() => {
-    bringToFront(popupId)
-    setCurrentZIndex(getPopupZIndex(popupId))
-  }, [bringToFront, getPopupZIndex, popupId])
 
   // Update the onFocus handler to use the z-index management system
   const handleFocus = useCallback(() => {

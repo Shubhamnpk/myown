@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/Header"
@@ -43,6 +43,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [activeModules, setActiveModules] = useState<ActiveModule[]>([])
   const { lastScore, lastScoreDate, streak, getTip, getRecentEntries, addEntry } = useProductivity()
+  const tip = useMemo(() => getTip(), [])
   const [displayedWidgets, setDisplayedWidgets] = useState([
     "lastScore",
     "streak",
@@ -286,7 +287,7 @@ export default function Dashboard() {
             <CardTitle className="text-lg font-semibold">Tip of the Day</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm italic">{getTip()}</p>
+            <p className="text-sm italic">{tip}</p>
           </CardContent>
         </Card>
       </motion.div>
@@ -509,7 +510,7 @@ export default function Dashboard() {
               title={getModuleTitle(module.name)}
               zIndex={module.zIndex}
               onFocus={() => bringToFront(module.id)}
-              isMinimized={module.isMinimized}
+              isMinimized={module.isMinimized ?? false}
               initialPosition={module.position}
               allActiveModules={activeModules.map((m) => ({
                 id: m.id,
