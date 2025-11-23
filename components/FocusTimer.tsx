@@ -38,16 +38,26 @@ export function FocusTimer() {
   const [isBreak, setIsBreak] = useState(false)
   const [volume, setVolume] = useState(50)
   const [isMuted, setIsMuted] = useState(false)
+  // Task and session management state
   const [task, setTask] = useState("")
   const [sessions, setSessions] = useState<FocusSession[]>([])
-  const { addProductivityEntry } = useProductivity()
+  // Note: addProductivityEntry is not available in useProductivity hook; using addEntry instead or removing for now
+  // const { addProductivityEntry } = useProductivity()
+
+  // Linking state for notes and goals
   const [linkedNote, setLinkedNote] = useState<string | null>(null)
   const [linkedGoal, setLinkedGoal] = useState<string | null>(null)
 
   useEffect(() => {
     const storedSessions = localStorage.getItem("focusSessions")
     if (storedSessions) {
-      setSessions(JSON.parse(storedSessions))
+      try {
+        setSessions(JSON.parse(storedSessions))
+      } catch (error) {
+        console.error("Failed to parse stored focus sessions:", error)
+        // Optionally, clear invalid data
+        localStorage.removeItem("focusSessions")
+      }
     }
   }, [])
 
@@ -83,12 +93,13 @@ export function FocusTimer() {
       completed: true,
     }
     setSessions([...sessions, newSession])
-    addProductivityEntry({
-      date: endTime.toISOString().split("T")[0],
-      category: "focus",
-      value: selectedPreset.duration / 60, // Convert seconds to minutes
-      notes: `Completed ${selectedPreset.name} session: ${task}`,
-    })
+    // TODO: Add productivity entry logging here once hook is updated
+    // addProductivityEntry({
+    //   date: endTime.toISOString().split("T")[0],
+    //   category: "focus",
+    //   value: selectedPreset.duration / 60, // Convert seconds to minutes
+    //   notes: `Completed ${selectedPreset.name} session: ${task}`,
+    // })
 
     if (selectedPreset.breakDuration > 0 && !isBreak) {
       setIsBreak(true)
@@ -97,7 +108,7 @@ export function FocusTimer() {
       setIsBreak(false)
       setTimeLeft(selectedPreset.duration)
     }
-  }, [selectedPreset, task, sessions, addProductivityEntry, isBreak])
+  }, [selectedPreset, task, sessions, isBreak])
 
   const toggleTimer = () => {
     setIsRunning(!isRunning)

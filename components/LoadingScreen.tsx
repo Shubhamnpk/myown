@@ -50,12 +50,27 @@ export default function LoadingScreen() {
     ? "bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500"
     : "bg-gradient-to-br from-gray-900 via-gray-800 to-black"
 
-  const Tip = ({ tip }) => (
-    <div className="flex items-center justify-center space-x-2 text-white/80 text-sm">
-      <tip.icon className="w-4 h-4" />
-      <span>{tip.text}</span>
-    </div>
-  )
+  interface TipProps {
+    tip: {
+      icon: React.ComponentType<{ className?: string }>
+      text: string
+    }
+  }
+
+  const Tip: React.FC<TipProps> = ({ tip }) => {
+    if (!tip || !tip.icon || !tip.text) {
+      return null
+    }
+
+    const { icon: Icon, text } = tip
+
+    return (
+      <div className="flex items-center justify-center space-x-2 text-white/80 text-sm">
+        <Icon className="w-4 h-4" />
+        <span>{text}</span>
+      </div>
+    )
+  }
 
   return (
     <div

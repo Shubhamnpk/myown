@@ -10,9 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Trash2, Edit2, Link, Calendar } from "lucide-react"
 
 interface SubTask {
-  id: string;\
-  title:: string
-completed: boolean
+  id: string
+  title: string
+  completed: boolean
 }
 
 interface Goal {
