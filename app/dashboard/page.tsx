@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/Header"
 import { useProductivity } from "@/hooks/useProductivity"
-import { MoreInfoModal } from "@/app/dashboard/MoreInfoModal"
+import { MoreInfoModal } from "@/app/dashboard/dashsettings"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Settings, PlusCircle, BarChart, Clock, BookOpen, Music, FileText, Target } from "lucide-react"
 import { Notification } from "@/components/Notification"
@@ -61,17 +61,13 @@ export default function Dashboard() {
   const [isGuestUser, setIsGuestUser] = useState(false)
   const router = useRouter()
   const [minimizedWindows, setMinimizedWindows] = useState<{ id: string; title: string }[]>([])
-
-  // Add this state to track fullscreen state
   const [fullscreenState, setFullscreenState] = useState<{
     fullscreenModuleId: string | null
     minimizedModules: string[]
   }>({ fullscreenModuleId: null, minimizedModules: [] })
-
-  // Add a function to position new popups in a cascading manner
   const getNewPopupPosition = useCallback((index: number) => {
     const basePosition = { x: 50, y: 50 }
-    const offset = 30 // pixels to offset each new window
+    const offset = 30
 
     return {
       x: basePosition.x + index * offset,
@@ -85,7 +81,7 @@ export default function Dashboard() {
       setIsGuestUser(isGuest())
       if (user) {
         setUserName(user.name)
-        setTimeout(() => setIsLoading(false), 3000) // Simulate loading for 3 seconds
+        setTimeout(() => setIsLoading(false), 3000)
       } else {
         router.push("/")
       }
@@ -114,50 +110,6 @@ export default function Dashboard() {
 
   const { getNewZIndex, registerPopup, unregisterPopup } = useZIndex()
 
-  // Update the openModule function to position new popups in a cascading manner
-  const openModule = useCallback(
-    (moduleName: string, initialPosition?: { x: number; y: number }) => {
-      setActiveModules((prev) => {
-        const existingModuleIndex = prev.findIndex((module) => module.name === moduleName)
-        if (existingModuleIndex !== -1) {
-          // If the module exists, bring it to the front
-          return prev.map((module, index) =>
-            index === existingModuleIndex ? { ...module, zIndex: getNewZIndex("popup"), isMinimized: false } : module,
-          )
-        } else {
-          // Calculate position for the new module
-          const newPosition = initialPosition || getNewPopupPosition(prev.length)
-          const moduleId = `${moduleName}-${Date.now()}`
-
-          // Register the new popup and get its z-index
-          const newZIndex = registerPopup(moduleId)
-
-          // If it's a new module, add it to the list
-          return [
-            ...prev,
-            {
-              id: moduleId,
-              name: moduleName,
-              zIndex: newZIndex,
-              isMinimized: false,
-              position: newPosition,
-            },
-          ]
-        }
-      })
-    },
-    [getNewPopupPosition, getNewZIndex, registerPopup],
-  )
-
-  // Update the closeModule function to unregister the popup
-  const closeModule = useCallback(
-    (id: string) => {
-      setActiveModules((prev) => prev.filter((module) => module.id !== id))
-      unregisterPopup(id)
-    },
-    [unregisterPopup],
-  )
-
   // Update the bringToFront function to use the z-index management system
   const bringToFront = useCallback(
     (id: string) => {
@@ -175,6 +127,43 @@ export default function Dashboard() {
     },
     [getNewZIndex],
   )
+
+  const openModule = useCallback(
+    (moduleName: string, initialPosition?: { x: number; y: number }) => {
+      const existingModule = activeModules.find((module) => module.name === moduleName)
+      if (existingModule) {
+        bringToFront(existingModule.id)
+        setActiveModules((prev) => prev.map((module) =>
+          module.id === existingModule.id ? { ...module, isMinimized: false } : module,
+        ))
+      } else {
+        const newPosition = initialPosition || getNewPopupPosition(activeModules.length)
+        const moduleId = `${moduleName}-${Date.now()}`
+        const newZIndex = registerPopup(moduleId)
+        setActiveModules((prev) => [
+          ...prev,
+          {
+            id: moduleId,
+            name: moduleName,
+            zIndex: newZIndex,
+            isMinimized: false,
+            position: newPosition,
+          },
+        ])
+      }
+    },
+    [activeModules, getNewPopupPosition, registerPopup, bringToFront],
+  )
+
+  // Update the closeModule function to unregister the popup
+  const closeModule = useCallback(
+    (id: string) => {
+      setActiveModules((prev) => prev.filter((module) => module.id !== id))
+      unregisterPopup(id)
+    },
+    [unregisterPopup],
+  )
+
 
   const handleMinimize = useCallback((id: string, title: string) => {
     setActiveModules((prev) => prev.map((module) => (module.id === id ? { ...module, isMinimized: true } : module)))
@@ -369,23 +358,17 @@ export default function Dashboard() {
   const handleFullscreenChange = useCallback(
     (moduleId: string, isFullscreen: boolean, tabs: any[]) => {
       if (isFullscreen) {
-        // When entering fullscreen, minimize all other modules
         const modulesToMinimize = activeModules.filter((module) => module.id !== moduleId && !module.isMinimized)
-
-        // Store the modules we're minimizing so we can restore them later
         setFullscreenState({
           fullscreenModuleId: moduleId,
           minimizedModules: modulesToMinimize.map((m) => m.id),
         })
-
-        // Minimize the modules
         setActiveModules((prev) =>
           prev.map((module) =>
             module.id !== moduleId && !module.isMinimized ? { ...module, isMinimized: true } : module,
           ),
         )
       } else {
-        // When exiting fullscreen, restore the previously minimized modules
         if (fullscreenState.minimizedModules.length > 0) {
           setActiveModules((prev) =>
             prev.map((module) =>
@@ -393,21 +376,14 @@ export default function Dashboard() {
             ),
           )
         }
-
-        // Convert tabs created during fullscreen to new popup windows
         if (tabs && tabs.length > 0) {
-          // Get the highest z-index to place new popups on top
           const maxZIndex = Math.max(...activeModules.map((module) => module.zIndex), 999)
-
-          // Create new popup windows for each tab (except the original one)
           const tabsToConvert = tabs.filter((tab) => tab.createdInFullscreen || tab.id !== tabs[0]?.id)
-
-          // Create new modules with proper content
           const newModules = tabsToConvert.map((tab, index) => {
             const position = getNewPopupPosition(index)
             return {
               id: `${tab.module}-${Date.now()}-${index}`,
-              name: tab.module, // Use the module name from the tab
+              name: tab.module,
               zIndex: maxZIndex + index + 1,
               isMinimized: false,
               position,
@@ -415,18 +391,13 @@ export default function Dashboard() {
           })
 
           if (newModules.length > 0) {
-            // Add the new modules to the active modules
             setActiveModules((prev) => [...prev, ...newModules])
-
-            // Show a notification about the new windows
             setNotification({
               type: "success",
               message: `${newModules.length} tab${newModules.length > 1 ? "s" : ""} converted to popup windows`,
             })
           }
         }
-
-        // Clear the fullscreen state
         setFullscreenState({ fullscreenModuleId: null, minimizedModules: [] })
       }
     },

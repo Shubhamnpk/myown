@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { parseBlob } from "music-metadata-browser" // Install: npm install music-metadata-browser
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,7 @@ import {
   ListMusic,
   MinimizeIcon,
   MaximizeIcon,
+  Upload,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -36,6 +38,8 @@ interface Song {
   artist: string
   url: string
   favorite?: boolean
+  isLocalFile?: boolean
+  coverArt?: string
 }
 
 export function MusicPlayer() {
@@ -54,12 +58,15 @@ export function MusicPlayer() {
   const [queue, setQueue] = useState<Song[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isMuted, setIsMuted] = useState(false)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [coverArtFile, setCoverArtFile] = useState<File | null>(null)
 
   useEffect(() => {
     const storedSongs = localStorage.getItem("songs")
     const storedQueue = localStorage.getItem("queue")
     if (storedSongs) {
-      setSongs(JSON.parse(storedSongs))
+      const parsedSongs = JSON.parse(storedSongs)
+      setSongs(parsedSongs)
     }
     if (storedQueue) {
       setQueue(JSON.parse(storedQueue))
@@ -67,7 +74,9 @@ export function MusicPlayer() {
   }, [])
 
   useEffect(() => {
-    localStorage.setItem("songs", JSON.stringify(songs))
+    // Only save non-local songs to avoid blob URL issues
+    const songsToSave = songs.filter(song => !song.isLocalFile)
+    localStorage.setItem("songs", JSON.stringify(songsToSave))
   }, [songs])
 
   useEffect(() => {
@@ -163,6 +172,7 @@ export function MusicPlayer() {
 
   const deleteSong = (songId: string) => {
     setSongs(songs.filter((song) => song.id !== songId))
+    setQueue(queue.filter((song) => song.id !== songId))
     if (currentSong?.id === songId) {
       setCurrentSong(null)
       setIsPlaying(false)
@@ -173,15 +183,84 @@ export function MusicPlayer() {
     setQueue([...queue, song])
   }
 
-  const addSong = () => {
-    if (newSong.title && newSong.url) {
-      const song = { ...newSong, id: Date.now().toString(), favorite: false }
-      setSongs([...songs, song])
-      if (!currentSong) {
-        setCurrentSong(song)
+  const addSong = async () => {
+    if (!((uploadedFile || newSong.url) && newSong.title)) return
+
+    let url: string
+    let coverArt: string | undefined
+
+    if (uploadedFile) {
+      url = URL.createObjectURL(uploadedFile)
+
+      // Try to extract cover art from audio file if no cover art uploaded
+      if (!coverArtFile) {
+        coverArt = await extractCoverArt(uploadedFile)
       }
-      setNewSong({ title: "", artist: "", url: "" })
-      setIsAddingNewSong(false)
+    } else {
+      url = newSong.url
+    }
+
+    if (coverArtFile) {
+      coverArt = URL.createObjectURL(coverArtFile)
+    }
+
+    const title = uploadedFile
+      ? (newSong.title || uploadedFile.name.replace(/\.[^/.]+$/, ""))
+      : newSong.title
+
+    const song: Song = {
+      id: Date.now().toString(),
+      title,
+      artist: newSong.artist || "Unknown Artist",
+      url,
+      favorite: false,
+      isLocalFile: !!uploadedFile,
+      coverArt
+    }
+
+    setSongs([...songs, song])
+    if (!currentSong) {
+      setCurrentSong(song)
+    }
+
+    if (uploadedFile) {
+      alert("Note: Uploaded files are temporary and will be lost when you refresh the page. For permanent storage, use URL-based songs.")
+    }
+
+    setNewSong({ title: "", artist: "", url: "" })
+    setUploadedFile(null)
+    setCoverArtFile(null)
+    setIsAddingNewSong(false)
+  }
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => {
+        resolve(reader.result as string)
+      }
+      reader.onerror = error => reject(error)
+    })
+  }
+
+  const extractCoverArt = async (file: File): Promise<string | undefined> => {
+    try {
+      const metadata = await parseBlob(file)
+      const picture = metadata.common.picture?.[0]
+      if (picture) {
+        const data = picture.data instanceof Buffer ? new Uint8Array(picture.data) : picture.data
+        const blob = new Blob([data], { type: picture.format })
+        return new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+      }
+      return undefined
+    } catch (error) {
+      console.error('Error extracting cover art:', error)
+      return undefined
     }
   }
 
@@ -252,6 +331,13 @@ export function MusicPlayer() {
             <div className="text-center space-y-2">
               {currentSong ? (
                 <>
+                  {currentSong.coverArt && (
+                    <img
+                      src={currentSong.coverArt}
+                      alt={`${currentSong.title} cover`}
+                      className="w-32 h-32 object-cover rounded-lg mx-auto mb-4"
+                    />
+                  )}
                   <h3 className="text-xl font-bold truncate">{currentSong.title}</h3>
                   <p className="text-sm text-muted-foreground">{currentSong.artist}</p>
                 </>
@@ -366,11 +452,41 @@ export function MusicPlayer() {
                   value={newSong.url}
                   onChange={(e) => setNewSong({ ...newSong, url: e.target.value })}
                 />
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="file"
+                    accept="audio/*"
+                    onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
+                    className="flex-1"
+                  />
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                </div>
+                {uploadedFile && (
+                  <p className="text-sm text-muted-foreground">Audio: {uploadedFile.name}</p>
+                )}
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setCoverArtFile(e.target.files?.[0] || null)}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground">Cover Art (optional)</span>
+                </div>
+                {coverArtFile && (
+                  <p className="text-sm text-muted-foreground">Cover: {coverArtFile.name}</p>
+                )}
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsAddingNewSong(false)}>
+                  <Button variant="outline" onClick={() => {
+                    setIsAddingNewSong(false)
+                    setUploadedFile(null)
+                    setCoverArtFile(null)
+                  }}>
                     Cancel
                   </Button>
-                  <Button onClick={addSong}>Add Song</Button>
+                  <Button onClick={addSong} disabled={(!uploadedFile && !newSong.url) || !newSong.title}>
+                    Add Song
+                  </Button>
                 </div>
               </div>
             )}
@@ -386,14 +502,23 @@ export function MusicPlayer() {
                   >
                     <div className="flex items-center justify-between">
                       <div
-                        className="flex-grow"
+                        className="flex items-center space-x-3 flex-grow"
                         onClick={() => {
                           setCurrentSong(song)
                           setIsPlaying(true)
                         }}
                       >
-                        <p className="font-semibold truncate">{song.title}</p>
-                        <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+                        {song.coverArt && (
+                          <img
+                            src={song.coverArt}
+                            alt={`${song.title} cover`}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-grow">
+                          <p className="font-semibold truncate">{song.title}</p>
+                          <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button
