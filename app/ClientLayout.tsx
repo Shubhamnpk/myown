@@ -8,6 +8,8 @@ import { getCurrentUser } from "@/utils/userManagement"
 import { ThemeProvider } from "next-themes"
 import { Notification } from "@/components/Notification"
 import { ZIndexProvider } from "@/hooks/useZIndex"
+import { MusicProvider } from "@/hooks/useMusic"
+import { MusicQuickActions } from "@/components/MusicQuickActions"
 
 export default function ClientLayout({
   children,
@@ -37,12 +39,15 @@ export default function ClientLayout({
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ZIndexProvider>
-        {children}
-        {notification && (
-          <Notification type={notification.type} message={notification.message} onClose={() => setNotification(null)} />
-        )}
-      </ZIndexProvider>
+      <MusicProvider>
+        <ZIndexProvider>
+          {children}
+          {notification && (
+            <Notification type={notification.type} message={notification.message} onClose={() => setNotification(null)} />
+          )}
+          <MusicQuickActions />
+        </ZIndexProvider>
+      </MusicProvider>
     </ThemeProvider>
   )
 }

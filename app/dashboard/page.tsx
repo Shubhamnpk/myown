@@ -29,6 +29,8 @@ import { StudySessionScheduler } from "@/components/StudySessionScheduler"
 import LoadingScreen from "@/components/LoadingScreen"
 import { MinimizedWindowsBar } from "@/components/MinimizedWindowsBar"
 import { useZIndex } from "@/hooks/useZIndex"
+import { YoMusic } from "@/components/YoMusic"
+import { YoMusicButton } from "@/components/YoMusicModal"
 
 interface ActiveModule {
   id: string
@@ -154,6 +156,16 @@ export default function Dashboard() {
     },
     [activeModules, getNewPopupPosition, registerPopup, bringToFront],
   )
+
+  // Listen for open-music-player event
+  useEffect(() => {
+    const handleOpenMusicPlayer = () => {
+      openModule("musicPlayer")
+    }
+
+    window.addEventListener('open-music-player', handleOpenMusicPlayer)
+    return () => window.removeEventListener('open-music-player', handleOpenMusicPlayer)
+  }, [openModule])
 
   // Update the closeModule function to unregister the popup
   const closeModule = useCallback(
@@ -458,6 +470,7 @@ export default function Dashboard() {
             <Button onClick={() => openModule("musicPlayer")} variant="outline">
               <Music className="mr-2 h-4 w-4" /> Music Player
             </Button>
+            <YoMusicButton onClick={() => openModule("yomusic")} />
             <Button onClick={() => openModule("productivityHistory")} variant="outline">
               <BarChart className="mr-2 h-4 w-4" /> Productivity History
             </Button>
@@ -527,6 +540,8 @@ function getModuleTitle(moduleName: string): string {
       return "Resource Library"
     case "musicPlayer":
       return "Music Player"
+    case "yomusic":
+      return "YoMusic"
     case "productivityHistory":
       return "Productivity History"
     case "notes":
@@ -550,6 +565,8 @@ function getModuleContent(moduleName: string): React.ReactNode {
       return <ResourceLibrary />
     case "musicPlayer":
       return <MusicPlayer />
+    case "yomusic":
+      return <YoMusic />
     case "productivityHistory":
       return <ProductivityHistory />
     case "notes":

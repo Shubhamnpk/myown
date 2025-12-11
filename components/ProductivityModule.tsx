@@ -15,6 +15,7 @@ import { Plus, Minus, Sparkles, Target, BookOpen, Scale, Heart } from "lucide-re
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { motion } from "framer-motion"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { TomorrowsGoalsDialog } from "@/components/TomorrowsGoalsDialog"
 
 interface Goal {
   id: string
@@ -70,7 +71,21 @@ const getTipForScore = (score: number): string => {
 export function ProductivityModule() {
   const { addEntry, streak } = useProductivity()
   const [showGoalDialog, setShowGoalDialog] = useState(false)
-  const [newGoals, setNewGoals] = useState({ monthly: DEFAULT_MONTHLY_GOALS, daily: DEFAULT_DAILY_GOALS })
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  // Load saved goals from localStorage or use defaults
+  const loadSavedGoals = () => {
+    const saved = localStorage.getItem("savedGoals")
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        console.error("Error parsing saved goals:", e)
+      }
+    }
+    return { monthly: DEFAULT_MONTHLY_GOALS, daily: DEFAULT_DAILY_GOALS }
+  }
+
   const [journalEntry, setJournalEntry] = useState<JournalEntry>({
     date: new Date().toISOString().split("T")[0],
     main: "",
@@ -78,8 +93,8 @@ export function ProductivityModule() {
     time: "",
     mood: "",
     specialDay: "",
-    monthlyGoals: DEFAULT_MONTHLY_GOALS,
-    dailyGoals: DEFAULT_DAILY_GOALS,
+    monthlyGoals: loadSavedGoals().monthly,
+    dailyGoals: loadSavedGoals().daily,
     learnings: "",
     learningScore: 0,
     gratitude: [""],
@@ -149,14 +164,40 @@ export function ProductivityModule() {
     if (shouldUpdateGoals) {
       setShowGoalDialog(true)
     } else {
-      alert("Journal entry saved successfully! Keep up the good work!")
+      setShowSuccess(true)
     }
   }
 
-  const handleGoalUpdate = () => {
-    localStorage.setItem("savedGoals", JSON.stringify(newGoals))
-    setShowGoalDialog(false)
-    alert("Goals updated for tomorrow!")
+  const handleGoalUpdate = (goals: { monthly: Goal[]; daily: Goal[] }) => {
+    // Update the current journal entry with the new goals for tomorrow
+    setJournalEntry(prev => ({
+      ...prev,
+      monthlyGoals: goals.monthly,
+      dailyGoals: goals.daily
+    }))
+  }
+
+  const resetForm = () => {
+    setJournalEntry({
+      date: new Date().toISOString().split("T")[0],
+      main: "",
+      location: "",
+      time: "",
+      mood: "",
+      specialDay: "",
+      monthlyGoals: loadSavedGoals().monthly,
+      dailyGoals: loadSavedGoals().daily,
+      learnings: "",
+      learningScore: 0,
+      gratitude: [""],
+      gratitudeScore: 0,
+      pros: [""],
+      cons: [""],
+      prosConsScore: 0,
+      goalsScore: 0,
+      finalSummary: "",
+    })
+    setShowSuccess(false)
   }
 
   return (
@@ -460,57 +501,38 @@ export function ProductivityModule() {
           </Card>
         </motion.div>
 
-        <Button onClick={handleSubmit} className="w-full" size="lg">
-          Save Journal Entry
-        </Button>
+        {!showSuccess ? (
+          <Button onClick={handleSubmit} className="w-full" size="lg">
+            Save Journal Entry
+          </Button>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="space-y-4"
+          >
+            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                🎉 Journal entry saved successfully! Keep up the great work!
+              </AlertDescription>
+            </Alert>
+            <Button onClick={resetForm} className="w-full" size="lg" variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Entry
+            </Button>
+          </motion.div>
+        )}
       </CardContent>
 
-      {/* Goals Update Dialog */}
-      <Dialog open={showGoalDialog} onOpenChange={setShowGoalDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Tomorrow's Goals</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium mb-2">Monthly Goals</h4>
-              {newGoals.monthly.map((goal, index) => (
-                <Input
-                  key={goal.id}
-                  value={goal.text}
-                  onChange={(e) => {
-                    const updated = [...newGoals.monthly]
-                    updated[index] = { ...goal, text: e.target.value }
-                    setNewGoals({ ...newGoals, monthly: updated })
-                  }}
-                  className="mb-2"
-                />
-              ))}
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Daily Goals</h4>
-              {newGoals.daily.map((goal, index) => (
-                <Input
-                  key={goal.id}
-                  value={goal.text}
-                  onChange={(e) => {
-                    const updated = [...newGoals.daily]
-                    updated[index] = { ...goal, text: e.target.value }
-                    setNewGoals({ ...newGoals, daily: updated })
-                  }}
-                  className="mb-2"
-                />
-              ))}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowGoalDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleGoalUpdate}>Update Goals</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TomorrowsGoalsDialog
+        open={showGoalDialog}
+        onOpenChange={setShowGoalDialog}
+        onSave={(goals) => {
+          handleGoalUpdate(goals)
+          setShowGoalDialog(false)
+          setShowSuccess(true)
+        }}
+      />
     </Card>
   )
 }
