@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { User, Camera, Mail, Globe, Save } from "lucide-react"
+import { User, Camera, Mail, Globe, Save, Edit3, X, Trash2, AlertTriangle } from "lucide-react"
 import { getCurrentUser, updateCurrentUser, isGuest } from "@/utils/userManagement"
 import { useRouter } from "next/navigation"
 
@@ -20,6 +20,7 @@ interface ProfileSettingsProps {
 export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
   const router = useRouter()
   const [user, setUser] = useState(getCurrentUser())
+  const [isEditing, setIsEditing] = useState(false)
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -66,26 +67,64 @@ export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
       profilePic: profileData.profilePic,
     })
     onNotification({ type: "success", message: "Profile updated successfully!" })
+    setIsEditing(false)
+  }
+
+  const handleCancelEdit = () => {
+    // Reset to original values
+    const currentUser = getCurrentUser()
+    if (currentUser) {
+      setProfileData({
+        name: currentUser.name,
+        email: currentUser.email,
+        username: currentUser.username,
+        bio: "",
+        location: "",
+        website: "",
+        profilePic: currentUser.profilePic,
+      })
+    }
+    setIsEditing(false)
+  }
+
+  const handleClearAllData = () => {
+    if (window.confirm("Are you sure you want to delete all app data? This action cannot be undone and will log you out.")) {
+      localStorage.clear()
+      onNotification({ type: "success", message: "All app data has been cleared. Redirecting..." })
+      setTimeout(() => {
+        window.location.href = "/"
+      }, 2000)
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Profile Information
-        </CardTitle>
-        <CardDescription>Manage your public profile and personal information</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Profile Information
+            </CardTitle>
+            <CardDescription>Manage your public profile and personal information</CardDescription>
+          </div>
+          {!isEditing && (
+            <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
+              <Edit3 className="h-4 w-4" />
+              Edit Profile
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Profile Picture */}
-        <div className="flex items-center gap-6">
+        {/* Profile Picture and Basic Info */}
+        <div className="flex items-start gap-6">
           <div className="relative">
-            <Avatar className="h-24 w-24">
+            <Avatar className="h-20 w-20">
               {profileData.profilePic ? (
                 <AvatarImage src={profileData.profilePic || "/placeholder.svg"} alt={profileData.name} />
               ) : (
-                <AvatarFallback className="text-2xl">
+                <AvatarFallback className="text-xl">
                   {profileData.name
                     .split(" ")
                     .map((n) => n[0])
@@ -94,109 +133,193 @@ export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
                 </AvatarFallback>
               )}
             </Avatar>
-            <Label
-              htmlFor="profile-pic"
-              className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 cursor-pointer hover:bg-primary/90 transition-colors"
-            >
-              <Camera className="h-4 w-4" />
-              <Input
-                id="profile-pic"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleProfilePicChange}
-              />
-            </Label>
+            {isEditing && (
+              <Label
+                htmlFor="profile-pic"
+                className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 cursor-pointer hover:bg-primary/90 transition-colors"
+              >
+                <Camera className="h-3 w-3" />
+                <Input
+                  id="profile-pic"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleProfilePicChange}
+                />
+              </Label>
+            )}
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold">{profileData.name}</h3>
-            <p className="text-sm text-muted-foreground">@{profileData.username}</p>
+          <div className="flex-1 space-y-2">
+            <div>
+              <h3 className="text-xl font-semibold">{profileData.name}</h3>
+              <p className="text-sm text-muted-foreground">@{profileData.username}</p>
+            </div>
             {isGuest() && (
-              <Badge variant="secondary" className="mt-2 bg-amber-500/10 text-amber-600">
+              <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
                 Guest Account
               </Badge>
+            )}
+            {profileData.bio && (
+              <p className="text-sm text-muted-foreground mt-2">{profileData.bio}</p>
             )}
           </div>
         </div>
 
         <Separator />
 
-        {/* Profile Fields */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              value={profileData.name}
-              onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-              placeholder="Enter your full name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              value={profileData.username}
-              onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-              placeholder="Choose a username"
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="email">Email Address</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                value={profileData.email}
-                onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                className="pl-10"
-                placeholder="your.email@example.com"
-              />
+        {/* Profile Details */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+              {isEditing ? (
+                <Input
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  placeholder="Enter your full name"
+                  className="mt-1"
+                />
+              ) : (
+                <p className="text-sm font-medium mt-1">{profileData.name || "Not set"}</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Username</Label>
+              {isEditing ? (
+                <Input
+                  value={profileData.username}
+                  onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
+                  placeholder="Choose a username"
+                  className="mt-1"
+                />
+              ) : (
+                <p className="text-sm font-medium mt-1">@{profileData.username || "Not set"}</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
+              {isEditing ? (
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    className="pl-10"
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm font-medium mt-1">{profileData.email || "Not set"}</p>
+              )}
             </div>
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="bio">Bio</Label>
-            <Input
-              id="bio"
-              value={profileData.bio}
-              onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-              placeholder="Tell us about yourself"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <div className="relative">
-              <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="location"
-                value={profileData.location}
-                onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                className="pl-10"
-                placeholder="City, Country"
-              />
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Bio</Label>
+              {isEditing ? (
+                <Input
+                  value={profileData.bio}
+                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                  placeholder="Tell us about yourself"
+                  className="mt-1"
+                />
+              ) : (
+                <p className="text-sm mt-1">{profileData.bio || "No bio added yet"}</p>
+              )}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
-            <Input
-              id="website"
-              value={profileData.website}
-              onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
-              placeholder="https://yourwebsite.com"
-            />
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Location</Label>
+              {isEditing ? (
+                <div className="relative mt-1">
+                  <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={profileData.location}
+                    onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                    className="pl-10"
+                    placeholder="City, Country"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm mt-1">{profileData.location || "Not specified"}</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Website</Label>
+              {isEditing ? (
+                <Input
+                  value={profileData.website}
+                  onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
+                  placeholder="https://yourwebsite.com"
+                  className="mt-1"
+                />
+              ) : (
+                profileData.website ? (
+                  <a
+                    href={profileData.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline mt-1 block"
+                  >
+                    {profileData.website}
+                  </a>
+                ) : (
+                  <p className="text-sm mt-1">Not provided</p>
+                )
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveProfile} className="gap-2">
-            <Save className="h-4 w-4" />
-            Save Changes
-          </Button>
-        </div>
+        {!isEditing && (
+          <>
+            <Separator />
+            {/* Data Management */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <h4 className="text-lg font-semibold text-destructive">Danger Zone</h4>
+              </div>
+              <Card className="border-destructive/20 bg-destructive/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <h5 className="font-medium">Clear All App Data</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Permanently delete all your data including profile, settings, and productivity records.
+                        This action cannot be undone.
+                      </p>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      onClick={handleClearAllData}
+                      className="gap-2 shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Clear All Data
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {isEditing && (
+          <>
+            <Separator />
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={handleCancelEdit} className="gap-2">
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+              <Button onClick={handleSaveProfile} className="gap-2">
+                <Save className="h-4 w-4" />
+                Save Changes
+              </Button>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )
