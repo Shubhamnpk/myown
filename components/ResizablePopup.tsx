@@ -219,6 +219,19 @@ export function ResizablePopup({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isFullScreen, isModuleSelectOpen, onMinimize, toggleFullScreen])
 
+  // Prevent body scrolling when in fullscreen mode
+  useEffect(() => {
+    if (isFullScreen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isFullScreen])
+
   const handleResizeStart = useCallback(
     (handle: string) => (e: React.PointerEvent) => {
       e.preventDefault()
