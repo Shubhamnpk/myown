@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import {
   Palette,
   Sun,
@@ -20,11 +21,12 @@ import {
   ZoomIn,
   ZoomOut,
   Globe,
-  Save,
   Radius,
   DonutIcon as FontIcon,
+  Check,
 } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useThemeStore } from "@/hooks/use-theme-store"
 
 interface ThemeSettingsProps {
   onNotification?: (notification: { type: "success" | "error"; message: string }) => void
@@ -32,6 +34,7 @@ interface ThemeSettingsProps {
 
 export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
   const { theme, setTheme } = useTheme()
+  const { accentColor, setAccentColor } = useThemeStore()
 
   const [appearanceSettings, setAppearanceSettings] = useState({
     fontSize: [16],
@@ -91,19 +94,11 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
     }
   }, [])
 
-  // Apply settings immediately when they change
+  // Apply and save settings immediately when they change
   useEffect(() => {
     applySettings(appearanceSettings)
-  }, [appearanceSettings])
-
-  const handleSaveTheme = () => {
     localStorage.setItem("appearanceSettings", JSON.stringify(appearanceSettings))
-    if (onNotification) {
-      onNotification({ type: "success", message: "Theme settings saved successfully!" })
-    } else {
-      alert("Theme settings saved!")
-    }
-  }
+  }, [appearanceSettings])
 
   const handleReset = () => {
     const defaults = {
@@ -129,11 +124,18 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Palette className="h-5 w-5" />
-          Theme Preference
-        </CardTitle>
-        <CardDescription>Customize the appearance of your workspace</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" />
+              Theme Preference
+            </CardTitle>
+            <CardDescription>Customize the appearance of your workspace</CardDescription>
+          </div>
+          <Button variant="outline" onClick={handleReset} size="sm">
+            Reset to Default
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-3 gap-4">
@@ -209,6 +211,57 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Accent Color
+          </h4>
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { value: 'default', color: 'bg-gray-500', name: 'Default' },
+              { value: 'purple', color: 'bg-purple-500', name: 'Purple' },
+              { value: 'blue', color: 'bg-blue-500', name: 'Blue' },
+              { value: 'green', color: 'bg-green-500', name: 'Green' },
+              { value: 'red', color: 'bg-red-500', name: 'Red' },
+              { value: 'orange', color: 'bg-orange-500', name: 'Orange' },
+              { value: 'pink', color: 'bg-pink-500', name: 'Pink' },
+              { value: 'teal', color: 'bg-teal-500', name: 'Teal' },
+              { value: 'yellow', color: 'bg-yellow-500', name: 'Yellow' },
+            ].map(({ value, color, name }) => (
+              <motion.button
+                key={value}
+                onClick={() => setAccentColor(value)}
+                className="group relative flex flex-col items-center gap-1"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                title={name}
+              >
+                <div
+                  className={cn(
+                    'relative w-10 h-10 rounded-lg border-2 transition-all shadow-sm',
+                    color,
+                    accentColor === value
+                      ? 'border-foreground ring-2 ring-primary/20 scale-110'
+                      : 'border-transparent hover:border-foreground/30'
+                  )}
+                >
+                  {accentColor === value && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute inset-0 flex items-center justify-center"
+                    >
+                      <Check className="w-5 h-5 text-white drop-shadow-lg" />
+                    </motion.div>
+                  )}
+                </div>
+              </motion.button>
+            ))}
           </div>
         </div>
 
@@ -376,15 +429,6 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
-          <Button variant="outline" onClick={handleReset}>
-            Reset to Default
-          </Button>
-          <Button onClick={handleSaveTheme} className="gap-2">
-            <Save className="h-4 w-4" />
-            Save Settings
-          </Button>
-        </div>
       </CardContent>
     </Card>
   )

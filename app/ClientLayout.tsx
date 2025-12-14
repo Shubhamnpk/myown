@@ -10,6 +10,7 @@ import { Notification } from "@/components/Notification"
 import { ZIndexProvider } from "@/hooks/useZIndex"
 import { MusicProvider } from "@/hooks/useMusic"
 import { MusicQuickActions } from "@/components/MusicQuickActions"
+import { useThemeStore } from "@/hooks/use-theme-store"
 
 export default function ClientLayout({
   children,
@@ -20,6 +21,7 @@ export default function ClientLayout({
   const pathname = usePathname()
   const [isLoading, setIsLoading] = useState(true)
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null)
+  const { accentColor } = useThemeStore()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -32,6 +34,17 @@ export default function ClientLayout({
 
     checkAuth()
   }, [router, pathname])
+
+  useEffect(() => {
+    // Remove all accent classes
+    document.documentElement.classList.forEach(cls => {
+      if (cls.startsWith('accent-')) {
+        document.documentElement.classList.remove(cls)
+      }
+    })
+    // Add current accent class
+    document.documentElement.classList.add(`accent-${accentColor}`)
+  }, [accentColor])
 
   if (isLoading) {
     return <div>Loading...</div>

@@ -5,6 +5,8 @@ interface User {
   username: string
   password: string
   profilePic: string | null
+  theme?: 'light' | 'dark' | 'system'
+  accentColor?: string
   isGuest: boolean
 }
 
@@ -80,6 +82,8 @@ export function createGuestUser(): User {
     username: `guest-${Date.now()}`,
     password: "",
     profilePic: null,
+    theme: 'system',
+    accentColor: 'blue',
     isGuest: true,
   }
   setCurrentUser(guestUser)

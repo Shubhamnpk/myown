@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { User, Camera, Mail, Globe, Save, Edit3, X, Trash2, AlertTriangle } from "lucide-react"
-import { getCurrentUser, updateCurrentUser, isGuest } from "@/utils/userManagement"
+import { Progress } from "@/components/ui/progress"
+import { User, Camera, Mail, Globe, Save, Edit3, X, Trash2, AlertTriangle, Lock, KeyRound, Eye, EyeOff, ShieldCheck } from "lucide-react"
+import { getCurrentUser, updateCurrentUser, isGuest, checkUser } from "@/utils/userManagement"
 import { useRouter } from "next/navigation"
 
 interface ProfileSettingsProps {
@@ -21,6 +22,14 @@ export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
   const router = useRouter()
   const [user, setUser] = useState(getCurrentUser())
   const [isEditing, setIsEditing] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordManagement, setShowPasswordManagement] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+  const [passwordStrength, setPasswordStrength] = useState(0)
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -95,6 +104,59 @@ export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
         window.location.href = "/"
       }, 2000)
     }
+  }
+
+  // Password strength checker
+  const checkPasswordStrength = (password: string) => {
+    let strength = 0
+    if (password.length >= 8) strength += 25
+    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength += 25
+    if (password.match(/\d/)) strength += 25
+    if (password.match(/[^a-zA-Z\d]/)) strength += 25
+    setPasswordStrength(strength)
+  }
+
+  const getPasswordStrengthText = () => {
+    if (passwordStrength < 25) return "Very Weak"
+    if (passwordStrength < 50) return "Weak"
+    if (passwordStrength < 75) return "Fair"
+    return "Strong"
+  }
+
+  // Handle password change
+  const handleChangePassword = () => {
+    if (!user || user.isGuest) {
+      onNotification({ type: "error", message: "Password change not available for guest users" })
+      return
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      onNotification({ type: "error", message: "Passwords do not match!" })
+      return
+    }
+
+    if (passwordStrength < 75) {
+      onNotification({ type: "error", message: "Password is too weak! Please choose a stronger password." })
+      return
+    }
+
+    // Verify current password
+    if (!checkUser(user.username, passwordData.currentPassword)) {
+      onNotification({ type: "error", message: "Current password is incorrect!" })
+      return
+    }
+
+    // Update password
+    updateCurrentUser({ password: passwordData.newPassword })
+    setUser(getCurrentUser())
+
+    onNotification({ type: "success", message: "Password changed successfully!" })
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    })
+    setPasswordStrength(0)
   }
 
   return (
@@ -274,6 +336,128 @@ export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
         {!isEditing && (
           <>
             <Separator />
+            
+            {/* Password Management */}
+            <div className="space-y-4">
+              <div
+                className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                onClick={() => setShowPasswordManagement(!showPasswordManagement)}
+              >
+                <div className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  <h4 className="text-lg font-semibold">Password Management</h4>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowPasswordManagement(!showPasswordManagement)
+                  }}
+                >
+                  {showPasswordManagement ? 'Collapse' : 'Expand'}
+                </Button>
+              </div>
+              
+              {showPasswordManagement && (
+                <>
+                  {!user?.isGuest && (
+                    <Card>
+                      <CardContent className="pt-6 space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="currentPassword">Current Password</Label>
+                          <div className="relative">
+                            <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="currentPassword"
+                              type={showPassword ? "text" : "password"}
+                              value={passwordData.currentPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                              className="pl-10"
+                              placeholder="Enter current password"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="newPassword">New Password</Label>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="newPassword"
+                              type={showPassword ? "text" : "password"}
+                              value={passwordData.newPassword}
+                              onChange={(e) => {
+                                setPasswordData({ ...passwordData, newPassword: e.target.value })
+                                checkPasswordStrength(e.target.value)
+                              }}
+                              className="pl-10"
+                              placeholder="Enter new password"
+                            />
+                          </div>
+                          {passwordData.newPassword && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span>Password Strength</span>
+                                <span className={passwordStrength >= 75 ? 'text-green-600' : 'text-orange-600'}>
+                                  {getPasswordStrengthText()}
+                                </span>
+                              </div>
+                              <Progress value={passwordStrength} className="h-2" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="confirmPassword"
+                              type={showPassword ? "text" : "password"}
+                              value={passwordData.confirmPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                              className="pl-10"
+                              placeholder="Confirm new password"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-2 top-1/2 -translate-y-1/2"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handleChangePassword}
+                          className="w-full gap-2"
+                          disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          Update Password
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {user?.isGuest && (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-center gap-2 text-yellow-800">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span className="text-sm">Password change not available for guest users</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </div>
+
+            <Separator />
+            
             {/* Data Management */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">

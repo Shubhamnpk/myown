@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Database, Download, Upload, HardDrive, PieChart, FileText, CloudUpload, CloudDownload, BarChart3 } from "lucide-react"
+import { Database, Download, Upload, HardDrive, PieChart, FileText, CloudUpload, CloudDownload, BarChart3, ChevronDown, ChevronUp } from "lucide-react"
 
 interface DataSettingsProps {
   onNotification: (notification: { type: "success" | "error"; message: string }) => void
@@ -26,6 +26,9 @@ export function DataSettings({ onNotification }: DataSettingsProps) {
   const [categories, setCategories] = useState<DataCategory[]>([])
   const [exportSelections, setExportSelections] = useState<Record<string, boolean>>({})
   const [importSelections, setImportSelections] = useState<Record<string, boolean>>({})
+  const [isExportExpanded, setIsExportExpanded] = useState(false)
+  const [isImportExpanded, setIsImportExpanded] = useState(false)
+  const [isStorageDistributionExpanded, setIsStorageDistributionExpanded] = useState(false)
 
   useEffect(() => {
     calculateStorageData()
@@ -192,128 +195,177 @@ export function DataSettings({ onNotification }: DataSettingsProps) {
 
       {/* Storage Distribution */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Storage Distribution
+        <CardHeader
+          className="cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg"
+          onClick={() => setIsStorageDistributionExpanded(!isStorageDistributionExpanded)}
+        >
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Storage Distribution
+            </div>
+            {isStorageDistributionExpanded ? (
+              <ChevronUp className="h-5 w-5 text-primary" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-primary" />
+            )}
           </CardTitle>
           <CardDescription>Breakdown by data category</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {categories.map((category, index) => {
-              const percentage = totalSize > 0 ? (category.size / totalSize) * 100 : 0
-              const colors = [
-                "from-blue-500 to-blue-600",
-                "from-green-500 to-green-600",
-                "from-purple-500 to-purple-600",
-                "from-orange-500 to-orange-600",
-              ]
-              return (
-                <div key={category.name} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{category.name}</h4>
-                      <Badge variant="secondary" className="text-xs">{category.keys.length} items</Badge>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{formatBytes(category.size)}</p>
-                      <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}%</p>
+        {isStorageDistributionExpanded && (
+          <CardContent className="space-y-6">
+            {/* Category List */}
+            <div className="space-y-2">
+              {categories.map((category, index) => {
+                const percentage = totalSize > 0 ? (category.size / totalSize) * 100 : 0
+                const colors = [
+                  { accent: "bg-slate-100 dark:bg-slate-900/50", text: "text-slate-700 dark:text-slate-300", border: "border-slate-200 dark:border-slate-800" },
+                  { accent: "bg-gray-100 dark:bg-gray-900/50", text: "text-gray-700 dark:text-gray-300", border: "border-gray-200 dark:border-gray-800" },
+                  { accent: "bg-zinc-100 dark:bg-zinc-900/50", text: "text-zinc-700 dark:text-zinc-300", border: "border-zinc-200 dark:border-zinc-800" },
+                  { accent: "bg-stone-100 dark:bg-stone-900/50", text: "text-stone-700 dark:text-stone-300", border: "border-stone-200 dark:border-stone-800" },
+                ]
+                const colorScheme = colors[index % colors.length]
+                
+                return (
+                  <div
+                    key={category.name}
+                    className={`p-4 ${colorScheme.accent} ${colorScheme.border} border rounded-lg hover:bg-muted/30 transition-all duration-200 group`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full bg-muted-foreground/60 group-hover:bg-primary/60 transition-colors`} />
+                        <div>
+                          <h4 className={`font-medium ${colorScheme.text}`}>{category.name}</h4>
+                          <p className="text-xs text-muted-foreground/70">{category.description}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-sm font-semibold ${colorScheme.text}`}>
+                          {formatBytes(category.size)}
+                        </div>
+                        <div className="text-xs text-muted-foreground/60">
+                          {percentage.toFixed(1)}% • {category.keys.length} items
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">{category.description}</p>
-                  <Progress value={percentage} className="h-2" />
-                  <div className={`mt-2 h-1 bg-gradient-to-r ${colors[index % colors.length]} rounded-full`} style={{ width: `${percentage}%` }} />
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
+                )
+              })}
+            </div>
+          </CardContent>
+        )}
       </Card>
 
-      {/* Export Data */}
-      <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
-            <CloudDownload className="h-5 w-5" />
-            Export Data
-          </CardTitle>
-          <CardDescription>Download your data as a JSON file for backup</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Select categories to export:</Label>
-            <div className="grid gap-3">
-              {categories.map((category) => (
-                <div key={category.name} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <Checkbox
-                    id={`export-${category.name}`}
-                    checked={exportSelections[category.name] || false}
-                    onCheckedChange={(checked) =>
-                      setExportSelections({ ...exportSelections, [category.name]: checked as boolean })
-                    }
-                  />
-                  <div className="flex-1">
-                    <Label htmlFor={`export-${category.name}`} className="font-medium cursor-pointer">
-                      {category.name}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">{formatBytes(category.size)}</p>
-                  </div>
+      {/* Export and Import Data in one row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Export Data */}
+        <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
+          <CardHeader
+            className="cursor-pointer hover:bg-green-50/50 dark:hover:bg-green-950/30 transition-colors rounded-t-lg"
+            onClick={() => setIsExportExpanded(!isExportExpanded)}
+          >
+            <CardTitle className="flex items-center justify-between text-green-700 dark:text-green-400">
+              <div className="flex items-center gap-2">
+                <CloudDownload className="h-5 w-5" />
+                Export Data
+              </div>
+              {isExportExpanded ? (
+                <ChevronUp className="h-5 w-5 text-green-600" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-green-600" />
+              )}
+            </CardTitle>
+            <CardDescription>Download your data as a JSON file for backup</CardDescription>
+          </CardHeader>
+          {isExportExpanded && (
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Select categories to export:</Label>
+                <div className="grid gap-3">
+                  {categories.map((category) => (
+                    <div key={category.name} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <Checkbox
+                        id={`export-${category.name}`}
+                        checked={exportSelections[category.name] || false}
+                        onCheckedChange={(checked) =>
+                          setExportSelections({ ...exportSelections, [category.name]: checked as boolean })
+                        }
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor={`export-${category.name}`} className="font-medium cursor-pointer">
+                          {category.name}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{formatBytes(category.size)}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-          <Button onClick={handleExport} className="w-full gap-2 bg-green-600 hover:bg-green-700">
-            <Download className="h-4 w-4" />
-            Export Selected Data
-          </Button>
-        </CardContent>
-      </Card>
+              </div>
+              <Button onClick={handleExport} className="w-full gap-2 bg-green-600 hover:bg-green-700">
+                <Download className="h-4 w-4" />
+                Export Selected Data
+              </Button>
+            </CardContent>
+          )}
+        </Card>
 
-      {/* Import Data */}
-      <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-            <CloudUpload className="h-5 w-5" />
-            Import Data
-          </CardTitle>
-          <CardDescription>Upload and restore data from a JSON file</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Select categories to import:</Label>
-            <div className="grid gap-3">
-              {categories.map((category) => (
-                <div key={category.name} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <Checkbox
-                    id={`import-${category.name}`}
-                    checked={importSelections[category.name] || false}
-                    onCheckedChange={(checked) =>
-                      setImportSelections({ ...importSelections, [category.name]: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor={`import-${category.name}`} className="font-medium cursor-pointer flex-1">
-                    {category.name}
-                  </Label>
+        {/* Import Data */}
+        <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
+          <CardHeader
+            className="cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors rounded-t-lg"
+            onClick={() => setIsImportExpanded(!isImportExpanded)}
+          >
+            <CardTitle className="flex items-center justify-between text-blue-700 dark:text-blue-400">
+              <div className="flex items-center gap-2">
+                <CloudUpload className="h-5 w-5" />
+                Import Data
+              </div>
+              {isImportExpanded ? (
+                <ChevronUp className="h-5 w-5 text-blue-600" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-blue-600" />
+              )}
+            </CardTitle>
+            <CardDescription>Upload and restore data from a JSON file</CardDescription>
+          </CardHeader>
+          {isImportExpanded && (
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Select categories to import:</Label>
+                <div className="grid gap-3">
+                  {categories.map((category) => (
+                    <div key={category.name} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <Checkbox
+                        id={`import-${category.name}`}
+                        checked={importSelections[category.name] || false}
+                        onCheckedChange={(checked) =>
+                          setImportSelections({ ...importSelections, [category.name]: checked as boolean })
+                        }
+                      />
+                      <Label htmlFor={`import-${category.name}`} className="font-medium cursor-pointer flex-1">
+                        {category.name}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-3">
-            <Label htmlFor="import-file" className="text-sm font-medium">Select JSON file:</Label>
-            <div className="relative">
-              <input
-                id="import-file"
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="w-full p-3 border rounded-lg bg-background hover:bg-muted/50 transition-colors cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-              />
-              <FileText className="absolute right-3 top-3 h-5 w-5 text-muted-foreground pointer-events-none" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="import-file" className="text-sm font-medium">Select JSON file:</Label>
+                <div className="relative">
+                  <input
+                    id="import-file"
+                    type="file"
+                    accept=".json"
+                    onChange={handleImport}
+                    className="w-full p-3 border rounded-lg bg-background hover:bg-muted/50 transition-colors cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  />
+                  <FileText className="absolute right-3 top-3 h-5 w-5 text-muted-foreground pointer-events-none" />
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      </div>
     </div>
   )
 }

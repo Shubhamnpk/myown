@@ -227,3 +227,40 @@
 .popup-focus-animation {
   animation: popup-focus 0.3s ease-in-out;
 }
+
+/* Accent color classes */
+.accent-default {
+  /* Use default colors */
+}
+.accent-purple {
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-blue {
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-green {
+  --primary: 142 76% 36%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-red {
+  --primary: 0 84% 60%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-orange {
+  --primary: 25 95% 53%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-pink {
+  --primary: 330 81% 60%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-teal {
+  --primary: 178 84% 37%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-yellow {
+  --primary: 48 96% 53%;
+  --primary-foreground: 0 0% 100%;
+}
