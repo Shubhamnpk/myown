@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { Lock, KeyRound, Eye, EyeOff, ShieldCheck, Fingerprint, Activity, Bell, Smartphone } from "lucide-react"
 
 interface SecuritySettingsProps {
@@ -120,12 +121,20 @@ export function SecuritySettings({ onNotification }: SecuritySettingsProps) {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-0.5">
-              <Label>Enable 2FA</Label>
+              <div className="flex items-center gap-2">
+                <Label>Enable 2FA</Label>
+                <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+              </div>
               <p className="text-sm text-muted-foreground">Require a verification code when signing in</p>
             </div>
             <Switch
               checked={securitySettings.twoFactorEnabled}
-              onCheckedChange={(checked) => setSecuritySettings({ ...securitySettings, twoFactorEnabled: checked })}
+              onCheckedChange={(checked) => {
+                setSecuritySettings({ ...securitySettings, twoFactorEnabled: checked })
+                if (checked) {
+                  onNotification({ type: "error", message: "Two-factor authentication coming soon!" })
+                }
+              }}
             />
           </div>
           {securitySettings.twoFactorEnabled && (
@@ -180,9 +189,10 @@ export function SecuritySettings({ onNotification }: SecuritySettingsProps) {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" className="w-full bg-transparent">
+          <Button variant="outline" className="w-full bg-transparent" onClick={() => onNotification({ type: "error", message: "Active sessions view coming soon!" })}>
             <Smartphone className="h-4 w-4 mr-2" />
             View Active Sessions
+            <Badge variant="secondary" className="ml-auto text-xs">Coming Soon</Badge>
           </Button>
         </CardContent>
       </Card>

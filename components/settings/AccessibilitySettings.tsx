@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
 import { Eye, Volume2, Save } from "lucide-react"
 
 interface AccessibilitySettingsProps {
@@ -24,24 +25,85 @@ export function AccessibilitySettings({ onNotification }: AccessibilitySettingsP
     textSpacing: [100],
     cursorSize: [100],
     animations: true,
+    highContrast: false,
   })
+
+  const applyAccessibilitySettings = (settings: typeof accessibilitySettings) => {
+    const root = document.documentElement
+
+    // High contrast
+    if (settings.highContrast) {
+      root.classList.add("high-contrast")
+    } else {
+      root.classList.remove("high-contrast")
+    }
+
+    // Animations
+    if (!settings.animations) {
+      root.classList.add("reduce-motion")
+    } else {
+      root.classList.remove("reduce-motion")
+    }
+
+    // Contrast level
+    root.style.setProperty("--contrast-level", `${settings.contrastLevel[0]}%`)
+
+    // Text spacing
+    const spacing = settings.textSpacing[0] / 100
+    root.style.setProperty("--text-spacing", `${spacing}`)
+    root.style.letterSpacing = `${(spacing - 1) * 0.1}em`
+    root.style.wordSpacing = `${(spacing - 1) * 0.2}em`
+    root.style.lineHeight = `${1.2 + (spacing - 1) * 0.1}`
+
+    // Cursor size
+    root.style.setProperty("--cursor-size", `${settings.cursorSize[0]}%`)
+    root.style.cursor = `auto` // Reset, or custom cursor if needed
+
+    // Focus indicators
+    if (settings.focusIndicators) {
+      root.classList.add("enhanced-focus")
+    } else {
+      root.classList.remove("enhanced-focus")
+    }
+
+    // Screen reader optimizations
+    if (settings.screenReader) {
+      root.setAttribute("aria-live", "polite")
+    } else {
+      root.removeAttribute("aria-live")
+    }
+  }
 
   // Load settings from localStorage
   useEffect(() => {
     const savedSettings = localStorage.getItem("accessibilitySettings")
     if (savedSettings) {
-      setAccessibilitySettings(JSON.parse(savedSettings))
+      const parsed = JSON.parse(savedSettings)
+      const merged = {
+        screenReader: false,
+        keyboardNavigation: true,
+        focusIndicators: true,
+        textToSpeech: false,
+        voiceVolume: [75],
+        contrastLevel: [100],
+        textSpacing: [100],
+        cursorSize: [100],
+        animations: true,
+        highContrast: false,
+        ...parsed,
+      }
+      setAccessibilitySettings(merged)
+      applyAccessibilitySettings(merged)
     }
   }, [])
 
+  // Apply settings immediately
+  useEffect(() => {
+    applyAccessibilitySettings(accessibilitySettings)
+  }, [accessibilitySettings])
+
   const handleSaveAccessibility = () => {
     localStorage.setItem("accessibilitySettings", JSON.stringify(accessibilitySettings))
-    // Apply settings logic would go here
-    if (accessibilitySettings.animations === false) {
-      document.documentElement.style.setProperty("--animation-speed", "0.01s")
-    } else {
-      document.documentElement.style.removeProperty("--animation-speed")
-    }
     onNotification({ type: "success", message: "Accessibility settings saved!" })
   }
 
@@ -64,9 +126,9 @@ export function AccessibilitySettings({ onNotification }: AccessibilitySettingsP
                 <p className="text-sm text-muted-foreground">Increase contrast for better visibility</p>
               </div>
               <Switch
-                checked={accessibilitySettings.focusIndicators}
+                checked={accessibilitySettings.highContrast}
                 onCheckedChange={(checked) =>
-                  setAccessibilitySettings({ ...accessibilitySettings, focusIndicators: checked })
+                  setAccessibilitySettings({ ...accessibilitySettings, highContrast: checked })
                 }
               />
             </div>
@@ -170,26 +232,38 @@ export function AccessibilitySettings({ onNotification }: AccessibilitySettingsP
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-0.5">
-              <Label>Screen Reader Support</Label>
+              <div className="flex items-center gap-2">
+                <Label>Screen Reader Support</Label>
+                <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+              </div>
               <p className="text-sm text-muted-foreground">Optimize for screen reader compatibility</p>
             </div>
             <Switch
               checked={accessibilitySettings.screenReader}
-              onCheckedChange={(checked) =>
+              onCheckedChange={(checked) => {
                 setAccessibilitySettings({ ...accessibilitySettings, screenReader: checked })
-              }
+                if (checked) {
+                  onNotification({ type: "error", message: "Advanced screen reader optimizations coming soon!" })
+                }
+              }}
             />
           </div>
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-0.5">
-              <Label>Text-to-Speech</Label>
+              <div className="flex items-center gap-2">
+                <Label>Text-to-Speech</Label>
+                <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+              </div>
               <p className="text-sm text-muted-foreground">Enable spoken feedback for text content</p>
             </div>
             <Switch
               checked={accessibilitySettings.textToSpeech}
-              onCheckedChange={(checked) =>
+              onCheckedChange={(checked) => {
                 setAccessibilitySettings({ ...accessibilitySettings, textToSpeech: checked })
-              }
+                if (checked) {
+                  onNotification({ type: "error", message: "Text-to-speech feature coming soon!" })
+                }
+              }}
             />
           </div>
           {accessibilitySettings.textToSpeech && (

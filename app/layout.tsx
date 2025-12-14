@@ -48,6 +48,7 @@ export default function RootLayout({
 }
 
 export const metadata = {
+  metadataBase: 'https://themyown.vercel.app',
   title: {
     default: 'MyOwn - Your All-in-One Productivity Solution',
     template: '%s | MyOwn'
@@ -61,11 +62,6 @@ export const metadata = {
     email: false,
     address: false,
     telephone: false,
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
   },
   robots: {
     index: true,
@@ -106,4 +102,10 @@ export const metadata = {
     images: ['/og-image.png'],
     creator: '@myownapp',
   },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };

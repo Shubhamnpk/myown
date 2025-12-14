@@ -29,6 +29,7 @@ interface UserDetails {
   name: string
   email: string
   username: string
+  profilePic: string | null
 }
 
 export function Header() {
@@ -46,6 +47,7 @@ export function Header() {
         name: user.name,
         email: user.email,
         username: user.username,
+        profilePic: user.profilePic || null,
       })
     }
   }, [user])
@@ -79,7 +81,7 @@ export function Header() {
 
   return (
     <header className="bg-background border-b">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-8 py-4 flex justify-between items-center">
         <motion.div
           className="rounded-lg bg-primary/5 p-2 cursor-pointer"
           whileHover={{

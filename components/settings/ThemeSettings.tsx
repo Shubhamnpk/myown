@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
 import {
   Palette,
   Sun,
@@ -80,16 +81,23 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
         compactMode: false,
         reducedMotion: false,
         highContrast: false,
+        colorBlind: "none",
+        language: "en",
+        dateFormat: "MM/DD/YYYY",
+        timeFormat: "12h",
         ...parsed,
       }
       setAppearanceSettings(merged)
-      applySettings(merged)
     }
   }, [])
 
+  // Apply settings immediately when they change
+  useEffect(() => {
+    applySettings(appearanceSettings)
+  }, [appearanceSettings])
+
   const handleSaveTheme = () => {
     localStorage.setItem("appearanceSettings", JSON.stringify(appearanceSettings))
-    applySettings(appearanceSettings)
     if (onNotification) {
       onNotification({ type: "success", message: "Theme settings saved successfully!" })
     } else {
@@ -242,6 +250,31 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
                 onCheckedChange={(checked) => setAppearanceSettings({ ...appearanceSettings, reducedMotion: checked })}
               />
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label>Color Blind Support</Label>
+                <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+              </div>
+              <Select
+                value={appearanceSettings.colorBlind}
+                onValueChange={(value) => {
+                  setAppearanceSettings({ ...appearanceSettings, colorBlind: value })
+                  if (value !== "none" && onNotification) {
+                    onNotification({ type: "error", message: "Color blind support coming soon!" })
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="deuteranopia">Deuteranopia (Green-weak)</SelectItem>
+                  <SelectItem value="protanopia">Protanopia (Red-weak)</SelectItem>
+                  <SelectItem value="tritanopia">Tritanopia (Blue-weak)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -299,10 +332,18 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
           </h4>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="language">Language</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="language">Language</Label>
+                <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+              </div>
               <Select
                 value={appearanceSettings.language}
-                onValueChange={(value) => setAppearanceSettings({ ...appearanceSettings, language: value })}
+                onValueChange={(value) => {
+                  setAppearanceSettings({ ...appearanceSettings, language: value })
+                  if (value !== "en" && onNotification) {
+                    onNotification({ type: "error", message: "Multi-language support coming soon!" })
+                  }
+                }}
               >
                 <SelectTrigger id="language">
                   <SelectValue />
@@ -335,13 +376,13 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-between items-center">
           <Button variant="outline" onClick={handleReset}>
             Reset to Default
           </Button>
           <Button onClick={handleSaveTheme} className="gap-2">
             <Save className="h-4 w-4" />
-            Save Theme
+            Save Settings
           </Button>
         </div>
       </CardContent>
