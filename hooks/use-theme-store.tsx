@@ -10,7 +10,7 @@ interface ThemeState {
 }
 
 export function useThemeStore(): ThemeState {
-  const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>('system');
+  const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>('dark');
   const [accentColor, setAccentColorState] = useState<string>('default');
 
   // Helper function to apply accent color to DOM

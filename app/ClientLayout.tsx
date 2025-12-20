@@ -51,7 +51,7 @@ export default function ClientLayout({
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <MusicProvider>
         <ZIndexProvider>
           {children}

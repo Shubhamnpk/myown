@@ -43,7 +43,7 @@ const stats = [
 export default function WelcomePage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [returningUser, setReturningUser] = useState(null)
+  const [returningUser, setReturningUser] = useState<string | null>(null)
   const { theme, setTheme } = useTheme()
 
   useEffect(() => {
@@ -260,7 +260,7 @@ export default function WelcomePage() {
   )
 }
 
-function FeatureCard({ icon, title, description, theme }) {
+function FeatureCard({ icon, title, description, theme }: { icon: React.ReactNode; title: string; description: string; theme: string | undefined }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -275,7 +275,7 @@ function FeatureCard({ icon, title, description, theme }) {
   )
 }
 
-function TestimonialCard({ name, role, content, rating, theme }) {
+function TestimonialCard({ name, role, content, rating, theme }: { name: string; role: string; content: string; rating: number; theme: string | undefined }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       <Card

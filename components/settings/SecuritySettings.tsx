@@ -48,6 +48,7 @@ export function SecuritySettings({ onNotification }: SecuritySettingsProps) {
     deviceManagement: true,
     securityAlerts: true,
     dataEncryption: true,
+    stayLoggedIn: true,
   })
 
   const [passwordStrength, setPasswordStrength] = useState(0)
@@ -119,10 +120,10 @@ export function SecuritySettings({ onNotification }: SecuritySettingsProps) {
       setFailedLoginAttempts(parseInt(failedAttempts))
     }
 
-    // Load security settings
-    const settings = localStorage.getItem('securitySettings')
-    if (settings) {
-      setSecuritySettings({ ...securitySettings, ...JSON.parse(settings) })
+    // Load security settings from user
+    const userSettings = currentUser?.securitySettings
+    if (userSettings) {
+      setSecuritySettings({ ...securitySettings, ...userSettings })
     }
   }
 
@@ -138,7 +139,7 @@ export function SecuritySettings({ onNotification }: SecuritySettingsProps) {
 
   const saveSecuritySettings = (settings: typeof securitySettings) => {
     setSecuritySettings(settings)
-    localStorage.setItem('securitySettings', JSON.stringify(settings))
+    updateCurrentUser({ securitySettings: settings })
   }
 
   // Password strength checker
@@ -297,10 +298,11 @@ export function SecuritySettings({ onNotification }: SecuritySettingsProps) {
       deviceManagement: true,
       securityAlerts: true,
       dataEncryption: true,
+      stayLoggedIn: true,
     }
-    
+
     saveSecuritySettings({ ...securitySettings, ...defaults })
-    
+
     saveSecurityEvent({
       type: 'security_change',
       description: 'Security settings reset to defaults',
@@ -671,6 +673,22 @@ export function SecuritySettings({ onNotification }: SecuritySettingsProps) {
             <Switch
               checked={securitySettings.dataEncryption}
               onCheckedChange={(checked) => saveSecuritySettings({ ...securitySettings, dataEncryption: checked })}
+            />
+          </div>
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-0.5">
+              <Label>Stay Logged In</Label>
+              <p className="text-sm text-muted-foreground">Keep me logged in across browser sessions</p>
+            </div>
+            <Switch
+              checked={securitySettings.stayLoggedIn}
+              onCheckedChange={(checked) => {
+                saveSecuritySettings({ ...securitySettings, stayLoggedIn: checked })
+                if (!checked) {
+                  // If disabling stay logged in, clear current session persistence
+                  localStorage.removeItem("currentUser")
+                }
+              }}
             />
           </div>
           <div className="space-y-2">
