@@ -101,6 +101,31 @@
   .compact .space-y-6 > * + * {
     margin-top: 1rem !important;
   }
+
+  /* High Contrast Mode */
+  .high-contrast {
+    --foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --muted-foreground: 0 0% 20%;
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+    --ring: 0 0% 0%;
+  }
+  .dark.high-contrast {
+    --foreground: 0 0% 100%;
+    --background: 0 0% 0%;
+    --muted-foreground: 0 0% 80%;
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+    --ring: 0 0% 100%;
+  }
+
+  /* Reduced Motion */
+  .reduce-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Z-index management */
@@ -166,6 +191,13 @@
   outline-offset: 2px;
 }
 
+/* Enhanced focus indicators */
+.enhanced-focus :focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 3px;
+  box-shadow: 0 0 0 1px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+}
+
 /* Elegant transitions */
 .transition-all {
   transition-property: all;
@@ -194,4 +226,41 @@
 
 .popup-focus-animation {
   animation: popup-focus 0.3s ease-in-out;
+}
+
+/* Accent color classes */
+.accent-default {
+  /* Use default colors */
+}
+.accent-purple {
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-blue {
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-green {
+  --primary: 142 76% 36%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-red {
+  --primary: 0 84% 60%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-orange {
+  --primary: 25 95% 53%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-pink {
+  --primary: 330 81% 60%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-teal {
+  --primary: 178 84% 37%;
+  --primary-foreground: 0 0% 100%;
+}
+.accent-yellow {
+  --primary: 48 96% 53%;
+  --primary-foreground: 0 0% 100%;
 }

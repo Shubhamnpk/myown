@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { User, Camera, Mail, Globe, Save } from "lucide-react"
-import { getCurrentUser, updateCurrentUser, isGuest } from "@/utils/userManagement"
+import { Progress } from "@/components/ui/progress"
+import { User, Camera, Mail, Globe, Save, Edit3, X, Trash2, AlertTriangle, Lock, KeyRound, Eye, EyeOff, ShieldCheck } from "lucide-react"
+import { getCurrentUser, updateCurrentUser, isGuest, checkUser } from "@/utils/userManagement"
 import { useRouter } from "next/navigation"
 
 interface ProfileSettingsProps {
@@ -20,6 +21,15 @@ interface ProfileSettingsProps {
 export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
   const router = useRouter()
   const [user, setUser] = useState(getCurrentUser())
+  const [isEditing, setIsEditing] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordManagement, setShowPasswordManagement] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+  const [passwordStrength, setPasswordStrength] = useState(0)
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -66,26 +76,117 @@ export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
       profilePic: profileData.profilePic,
     })
     onNotification({ type: "success", message: "Profile updated successfully!" })
+    setIsEditing(false)
+  }
+
+  const handleCancelEdit = () => {
+    // Reset to original values
+    const currentUser = getCurrentUser()
+    if (currentUser) {
+      setProfileData({
+        name: currentUser.name,
+        email: currentUser.email,
+        username: currentUser.username,
+        bio: "",
+        location: "",
+        website: "",
+        profilePic: currentUser.profilePic,
+      })
+    }
+    setIsEditing(false)
+  }
+
+  const handleClearAllData = () => {
+    if (window.confirm("Are you sure you want to delete all app data? This action cannot be undone and will log you out.")) {
+      localStorage.clear()
+      onNotification({ type: "success", message: "All app data has been cleared. Redirecting..." })
+      setTimeout(() => {
+        window.location.href = "/"
+      }, 2000)
+    }
+  }
+
+  // Password strength checker
+  const checkPasswordStrength = (password: string) => {
+    let strength = 0
+    if (password.length >= 8) strength += 25
+    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength += 25
+    if (password.match(/\d/)) strength += 25
+    if (password.match(/[^a-zA-Z\d]/)) strength += 25
+    setPasswordStrength(strength)
+  }
+
+  const getPasswordStrengthText = () => {
+    if (passwordStrength < 25) return "Very Weak"
+    if (passwordStrength < 50) return "Weak"
+    if (passwordStrength < 75) return "Fair"
+    return "Strong"
+  }
+
+  // Handle password change
+  const handleChangePassword = () => {
+    if (!user || user.isGuest) {
+      onNotification({ type: "error", message: "Password change not available for guest users" })
+      return
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      onNotification({ type: "error", message: "Passwords do not match!" })
+      return
+    }
+
+    if (passwordStrength < 75) {
+      onNotification({ type: "error", message: "Password is too weak! Please choose a stronger password." })
+      return
+    }
+
+    // Verify current password
+    if (!checkUser(user.username, passwordData.currentPassword)) {
+      onNotification({ type: "error", message: "Current password is incorrect!" })
+      return
+    }
+
+    // Update password
+    updateCurrentUser({ password: passwordData.newPassword })
+    setUser(getCurrentUser())
+
+    onNotification({ type: "success", message: "Password changed successfully!" })
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    })
+    setPasswordStrength(0)
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Profile Information
-        </CardTitle>
-        <CardDescription>Manage your public profile and personal information</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Profile Information
+            </CardTitle>
+            <CardDescription>Manage your public profile and personal information</CardDescription>
+          </div>
+          {!isEditing && (
+            <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
+              <Edit3 className="h-4 w-4" />
+              Edit Profile
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Profile Picture */}
-        <div className="flex items-center gap-6">
+        {/* Profile Picture and Basic Info */}
+        <div className="flex items-start gap-6">
           <div className="relative">
-            <Avatar className="h-24 w-24">
+            <Avatar className="h-20 w-20">
               {profileData.profilePic ? (
                 <AvatarImage src={profileData.profilePic || "/placeholder.svg"} alt={profileData.name} />
               ) : (
-                <AvatarFallback className="text-2xl">
+                <AvatarFallback className="text-xl">
                   {profileData.name
                     .split(" ")
                     .map((n) => n[0])
@@ -94,109 +195,315 @@ export function ProfileSettings({ onNotification }: ProfileSettingsProps) {
                 </AvatarFallback>
               )}
             </Avatar>
-            <Label
-              htmlFor="profile-pic"
-              className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 cursor-pointer hover:bg-primary/90 transition-colors"
-            >
-              <Camera className="h-4 w-4" />
-              <Input
-                id="profile-pic"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleProfilePicChange}
-              />
-            </Label>
+            {isEditing && (
+              <Label
+                htmlFor="profile-pic"
+                className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 cursor-pointer hover:bg-primary/90 transition-colors"
+              >
+                <Camera className="h-3 w-3" />
+                <Input
+                  id="profile-pic"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleProfilePicChange}
+                />
+              </Label>
+            )}
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold">{profileData.name}</h3>
-            <p className="text-sm text-muted-foreground">@{profileData.username}</p>
+          <div className="flex-1 space-y-2">
+            <div>
+              <h3 className="text-xl font-semibold">{profileData.name}</h3>
+              <p className="text-sm text-muted-foreground">@{profileData.username}</p>
+            </div>
             {isGuest() && (
-              <Badge variant="secondary" className="mt-2 bg-amber-500/10 text-amber-600">
+              <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
                 Guest Account
               </Badge>
+            )}
+            {profileData.bio && (
+              <p className="text-sm text-muted-foreground mt-2">{profileData.bio}</p>
             )}
           </div>
         </div>
 
         <Separator />
 
-        {/* Profile Fields */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              value={profileData.name}
-              onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-              placeholder="Enter your full name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              value={profileData.username}
-              onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-              placeholder="Choose a username"
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="email">Email Address</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                value={profileData.email}
-                onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                className="pl-10"
-                placeholder="your.email@example.com"
-              />
+        {/* Profile Details */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+              {isEditing ? (
+                <Input
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  placeholder="Enter your full name"
+                  className="mt-1"
+                />
+              ) : (
+                <p className="text-sm font-medium mt-1">{profileData.name || "Not set"}</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Username</Label>
+              {isEditing ? (
+                <Input
+                  value={profileData.username}
+                  onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
+                  placeholder="Choose a username"
+                  className="mt-1"
+                />
+              ) : (
+                <p className="text-sm font-medium mt-1">@{profileData.username || "Not set"}</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
+              {isEditing ? (
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    className="pl-10"
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm font-medium mt-1">{profileData.email || "Not set"}</p>
+              )}
             </div>
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="bio">Bio</Label>
-            <Input
-              id="bio"
-              value={profileData.bio}
-              onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-              placeholder="Tell us about yourself"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <div className="relative">
-              <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="location"
-                value={profileData.location}
-                onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                className="pl-10"
-                placeholder="City, Country"
-              />
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Bio</Label>
+              {isEditing ? (
+                <Input
+                  value={profileData.bio}
+                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                  placeholder="Tell us about yourself"
+                  className="mt-1"
+                />
+              ) : (
+                <p className="text-sm mt-1">{profileData.bio || "No bio added yet"}</p>
+              )}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
-            <Input
-              id="website"
-              value={profileData.website}
-              onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
-              placeholder="https://yourwebsite.com"
-            />
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Location</Label>
+              {isEditing ? (
+                <div className="relative mt-1">
+                  <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={profileData.location}
+                    onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                    className="pl-10"
+                    placeholder="City, Country"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm mt-1">{profileData.location || "Not specified"}</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Website</Label>
+              {isEditing ? (
+                <Input
+                  value={profileData.website}
+                  onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
+                  placeholder="https://yourwebsite.com"
+                  className="mt-1"
+                />
+              ) : (
+                profileData.website ? (
+                  <a
+                    href={profileData.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline mt-1 block"
+                  >
+                    {profileData.website}
+                  </a>
+                ) : (
+                  <p className="text-sm mt-1">Not provided</p>
+                )
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveProfile} className="gap-2">
-            <Save className="h-4 w-4" />
-            Save Changes
-          </Button>
-        </div>
+        {!isEditing && (
+          <>
+            <Separator />
+            
+            {/* Password Management */}
+            <div className="space-y-4">
+              <div
+                className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                onClick={() => setShowPasswordManagement(!showPasswordManagement)}
+              >
+                <div className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  <h4 className="text-lg font-semibold">Password Management</h4>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowPasswordManagement(!showPasswordManagement)
+                  }}
+                >
+                  {showPasswordManagement ? 'Collapse' : 'Expand'}
+                </Button>
+              </div>
+              
+              {showPasswordManagement && (
+                <>
+                  {!user?.isGuest && (
+                    <Card>
+                      <CardContent className="pt-6 space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="currentPassword">Current Password</Label>
+                          <div className="relative">
+                            <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="currentPassword"
+                              type={showPassword ? "text" : "password"}
+                              value={passwordData.currentPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                              className="pl-10"
+                              placeholder="Enter current password"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="newPassword">New Password</Label>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="newPassword"
+                              type={showPassword ? "text" : "password"}
+                              value={passwordData.newPassword}
+                              onChange={(e) => {
+                                setPasswordData({ ...passwordData, newPassword: e.target.value })
+                                checkPasswordStrength(e.target.value)
+                              }}
+                              className="pl-10"
+                              placeholder="Enter new password"
+                            />
+                          </div>
+                          {passwordData.newPassword && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span>Password Strength</span>
+                                <span className={passwordStrength >= 75 ? 'text-green-600' : 'text-orange-600'}>
+                                  {getPasswordStrengthText()}
+                                </span>
+                              </div>
+                              <Progress value={passwordStrength} className="h-2" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="confirmPassword"
+                              type={showPassword ? "text" : "password"}
+                              value={passwordData.confirmPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                              className="pl-10"
+                              placeholder="Confirm new password"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-2 top-1/2 -translate-y-1/2"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handleChangePassword}
+                          className="w-full gap-2"
+                          disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          Update Password
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {user?.isGuest && (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-center gap-2 text-yellow-800">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span className="text-sm">Password change not available for guest users</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </div>
+
+            <Separator />
+            
+            {/* Data Management */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <h4 className="text-lg font-semibold text-destructive">Danger Zone</h4>
+              </div>
+              <Card className="border-destructive/20 bg-destructive/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <h5 className="font-medium">Clear All App Data</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Permanently delete all your data including profile, settings, and productivity records.
+                        This action cannot be undone.
+                      </p>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      onClick={handleClearAllData}
+                      className="gap-2 shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Clear All Data
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {isEditing && (
+          <>
+            <Separator />
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={handleCancelEdit} className="gap-2">
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+              <Button onClick={handleSaveProfile} className="gap-2">
+                <Save className="h-4 w-4" />
+                Save Changes
+              </Button>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )

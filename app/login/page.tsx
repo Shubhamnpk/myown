@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { checkUser, setLoggedInUser } from "@/utils/localStorage"
+import { checkUser, setCurrentUser } from "@/utils/userManagement"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("")
@@ -18,8 +18,9 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    if (checkUser(username, password)) {
-      setLoggedInUser(username)
+    const user = checkUser(username, password)
+    if (user) {
+      setCurrentUser(user)
       router.push("/dashboard")
     } else {
       setError("Invalid username or password")

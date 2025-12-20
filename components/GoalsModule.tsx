@@ -8,6 +8,9 @@ import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Trash2, Edit2, Link, Calendar } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 interface SubTask {
   id: string
@@ -42,6 +45,15 @@ export function GoalsModule() {
     linkedNotes: [],
   })
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
 
   useEffect(() => {
     const savedGoals = localStorage.getItem("goals")
@@ -66,7 +78,7 @@ export function GoalsModule() {
     } else {
       const newGoalWithId: Goal = {
         ...newGoal,
-        id: Date.now().toString(),
+        id: generateUUID(),
       }
       setGoals([...goals, newGoalWithId])
     }
@@ -94,6 +106,7 @@ export function GoalsModule() {
   const editGoal = (goal: Goal) => {
     setEditingGoalId(goal.id)
     setNewGoal(goal)
+    setIsDialogOpen(true)
   }
 
   const addSubTask = (goalId: string, subTaskTitle: string) => {
@@ -102,7 +115,7 @@ export function GoalsModule() {
         goal.id === goalId
           ? {
               ...goal,
-              subTasks: [...goal.subTasks, { id: Date.now().toString(), title: subTaskTitle, completed: false }],
+              subTasks: [...goal.subTasks, { id: generateUUID(), title: subTaskTitle, completed: false }],
             }
           : goal,
       ),
@@ -158,41 +171,79 @@ export function GoalsModule() {
         <CardTitle>Goals</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <Input
-            placeholder="Goal title"
-            value={newGoal.title}
-            onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-          />
-          <Input
-            placeholder="Goal description"
-            value={newGoal.description}
-            onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
-          />
-          <Select value={newGoal.category} onValueChange={(category) => setNewGoal({ ...newGoal, category })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-4 w-4" />
-            <Input
-              type="date"
-              value={newGoal.dueDate}
-              onChange={(e) => setNewGoal({ ...newGoal, dueDate: e.target.value })}
-            />
-          </div>
-          <Button onClick={addOrUpdateGoal} className="w-full">
-            <Plus className="mr-2 h-4 w-4" /> {editingGoalId ? "Update Goal" : "Add Goal"}
-          </Button>
-        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="w-full mb-4">
+              <Plus className="mr-2 h-4 w-4" /> Add Goal
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">
+                {editingGoalId ? "Edit Goal" : "Create New Goal"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-6 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title" className="font-medium">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  placeholder="Goal title"
+                  value={newGoal.title}
+                  onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="description" className="font-medium">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="Goal description"
+                  value={newGoal.description}
+                  onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                  className="min-h-[100px]"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="category" className="font-medium">
+                  Category
+                </Label>
+                <Select value={newGoal.category} onValueChange={(category) => setNewGoal({ ...newGoal, category })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="dueDate" className="font-medium">
+                  Due Date
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4" />
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={newGoal.dueDate}
+                    onChange={(e) => setNewGoal({ ...newGoal, dueDate: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            <Button onClick={addOrUpdateGoal} className="w-full">
+              {editingGoalId ? "Update Goal" : "Add Goal"}
+            </Button>
+          </DialogContent>
+        </Dialog>
         <div className="mt-6 space-y-4">
           {goals.map((goal) => (
             <Card key={goal.id}>
@@ -218,12 +269,14 @@ export function GoalsModule() {
                 <div className="mt-4">
                   <h4 className="font-semibold mb-2">Sub-tasks:</h4>
                   {goal.subTasks.map((subTask) => (
-                    <div key={subTask.id} className="flex items-center space-x-2">
+                    <div key={subTask.id} className={`flex items-center space-x-2 p-2 rounded-md ${subTask.completed ? "bg-green-900/20" : "bg-gray-900/10"}`}>
                       <Checkbox
                         checked={subTask.completed}
                         onCheckedChange={() => toggleSubTask(goal.id, subTask.id)}
                       />
-                      <span className={subTask.completed ? "line-through" : ""}>{subTask.title}</span>
+                      <span className={subTask.completed ? "line-through text-muted-foreground" : "text-foreground"}>
+                        {subTask.title}
+                      </span>
                       <Button variant="ghost" size="sm" onClick={() => deleteSubTask(goal.id, subTask.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>

@@ -83,7 +83,7 @@ export default function Dashboard() {
       setIsGuestUser(isGuest())
       if (user) {
         setUserName(user.name)
-        setTimeout(() => setIsLoading(false), 3000)
+        setIsLoading(false)
       } else {
         router.push("/")
       }
@@ -423,7 +423,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="container mx-auto px-4 py-8 flex-grow">
+      <main className="container mx-auto px-12 py-8 flex-grow">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}

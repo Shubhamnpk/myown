@@ -5,7 +5,18 @@ interface User {
   username: string
   password: string
   profilePic: string | null
+  theme?: 'light' | 'dark' | 'system'
+  accentColor?: string
   isGuest: boolean
+  securitySettings?: {
+    twoFactorEnabled: boolean
+    loginNotifications: boolean
+    sessionTimeout: string
+    deviceManagement: boolean
+    securityAlerts: boolean
+    dataEncryption: boolean
+    stayLoggedIn: boolean
+  }
 }
 
 let currentUser: User | null = null
@@ -34,7 +45,7 @@ export function checkUser(username: string, password: string): User | null {
 
 export function setCurrentUser(user: User | null) {
   currentUser = user
-  if (user) {
+  if (user && user.securitySettings?.stayLoggedIn !== false) {
     localStorage.setItem("currentUser", JSON.stringify(user))
   } else {
     localStorage.removeItem("currentUser")
@@ -80,6 +91,8 @@ export function createGuestUser(): User {
     username: `guest-${Date.now()}`,
     password: "",
     profilePic: null,
+    theme: 'system',
+    accentColor: 'blue',
     isGuest: true,
   }
   setCurrentUser(guestUser)
