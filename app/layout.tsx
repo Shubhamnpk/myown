@@ -1,5 +1,4 @@
 import type React from "react"
-import Head from "next/head"
 import "./globals.css"
 import ClientLayout from "./ClientLayout"
 
@@ -8,38 +7,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "MyOwn",
-    applicationCategory: "ProductivityApplication",
-    description: "Your all-in-one productivity solution for seamless task management, resource organization, and performance tracking.",
-    url: "https://myown.com/",
-    creator: {
-      "@type": "Organization",
-      name: "MyOwn Team"
-    },
-    operatingSystem: "Any",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD"
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      ratingCount: "1000"
-    }
-  }
-
   return (
     <html lang="en" suppressHydrationWarning>
-      <Head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      </Head>
       <body>
         <ClientLayout>{children}</ClientLayout>
       </body>
@@ -102,6 +71,36 @@ export const metadata = {
     images: ['/og-image.png'],
     creator: '@myownapp',
   },
+  other: {
+    'script': [
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "MyOwn",
+          applicationCategory: "ProductivityApplication",
+          description: "Your all-in-one productivity solution for seamless task management, resource organization, and performance tracking.",
+          url: "https://myown.com/",
+          creator: {
+            "@type": "Organization",
+            name: "MyOwn Team"
+          },
+          operatingSystem: "Any",
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD"
+          },
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: "4.8",
+            ratingCount: "1000"
+          }
+        })
+      }
+    ]
+  }
 };
 
 export const viewport = {

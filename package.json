@@ -1,8 +1,13 @@
 {
   "name": "myown",
   "version": "1.2.0",
-  "packageManager": "pnpm@10.25.0",
+  "packageManager": "pnpm@10.27.0",
   "private": true,
+  "pnpm": {
+    "overrides": {
+      "glob": "^10.5.0"
+    }
+  },
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -60,7 +65,7 @@
     "react-resizable-panels": "^2.1.7",
     "recharts": "latest",
     "sonner": "^1.7.1",
-    "tailwind-merge": "^2.5.5" ,
+    "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
@@ -71,7 +76,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8.5",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5"
   }
 }
