@@ -46,10 +46,6 @@ export default function ClientLayout({
     document.documentElement.classList.add(`accent-${accentColor}`)
   }, [accentColor])
 
-  if (isLoading) {
-    return <div>Loading...</div>
-  }
-
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <MusicProvider>
