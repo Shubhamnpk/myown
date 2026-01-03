@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { saveUser, setCurrentUser } from '@/utils/userManagement';
 import { useThemeStore } from '@/hooks/use-theme-store';
 import {
@@ -231,9 +232,16 @@ export default function RegisterPage() {
   const progress = ((currentStep + 1) / steps.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex flex-col relative overflow-hidden">
+      {/* Background decoration */}
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          background: 'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.03) 20px, rgba(0,0,0,0.03) 40px), repeating-linear-gradient(-45deg, transparent, transparent 20px, rgba(0,0,0,0.02) 20px, rgba(0,0,0,0.02) 40px)',
+        }}
+      />
       {/* Progress Bar */}
-      <div className="w-full h-1.5 bg-muted">
+      <div className="w-full h-1.5 bg-muted relative z-10">
         <motion.div
           className="h-full bg-gradient-to-r from-primary via-primary/80 to-primary"
           initial={{ width: 0 }}
@@ -788,6 +796,14 @@ export default function RegisterPage() {
             </Button>
           </motion.div>
         </div>
+      </div>
+      <div className="text-center pb-4">
+        <p className="text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline font-medium">
+            Login here
+          </Link>
+        </p>
       </div>
     </div>
   );
