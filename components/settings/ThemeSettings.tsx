@@ -74,30 +74,34 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
   }
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem("appearanceSettings")
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings)
-      const merged = {
-        fontSize: [16],
-        radius: [0.5],
-        font: "Inter",
-        compactMode: false,
-        reducedMotion: false,
-        highContrast: false,
-        colorBlind: "none",
-        language: "en",
-        dateFormat: "MM/DD/YYYY",
-        timeFormat: "12h",
-        ...parsed,
+    if (typeof window !== 'undefined') {
+      const savedSettings = localStorage.getItem("appearanceSettings")
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings)
+        const merged = {
+          fontSize: [16],
+          radius: [0.5],
+          font: "Inter",
+          compactMode: false,
+          reducedMotion: false,
+          highContrast: false,
+          colorBlind: "none",
+          language: "en",
+          dateFormat: "MM/DD/YYYY",
+          timeFormat: "12h",
+          ...parsed,
+        }
+        setAppearanceSettings(merged)
       }
-      setAppearanceSettings(merged)
     }
   }, [])
 
   // Apply and save settings immediately when they change
   useEffect(() => {
     applySettings(appearanceSettings)
-    localStorage.setItem("appearanceSettings", JSON.stringify(appearanceSettings))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("appearanceSettings", JSON.stringify(appearanceSettings))
+    }
   }, [appearanceSettings])
 
   const handleReset = () => {
@@ -115,7 +119,9 @@ export function ThemeSettings({ onNotification }: ThemeSettingsProps) {
     }
     setAppearanceSettings(defaults)
     applySettings(defaults)
-    localStorage.setItem("appearanceSettings", JSON.stringify(defaults))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("appearanceSettings", JSON.stringify(defaults))
+    }
     if (onNotification) {
       onNotification({ type: "success", message: "Theme reset to defaults" })
     }
