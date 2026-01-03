@@ -29,11 +29,14 @@ export function saveUser(user: Omit<User, "id" | "isGuest">): User {
   }
   const users = getUsers()
   users.push(newUser)
-  localStorage.setItem("users", JSON.stringify(users))
+  if (typeof window !== 'undefined') {
+    localStorage.setItem("users", JSON.stringify(users))
+  }
   return newUser
 }
 
 export function getUsers(): User[] {
+  if (typeof window === 'undefined') return []
   const users = localStorage.getItem("users")
   return users ? JSON.parse(users) : []
 }
@@ -45,15 +48,18 @@ export function checkUser(username: string, password: string): User | null {
 
 export function setCurrentUser(user: User | null) {
   currentUser = user
-  if (user && user.securitySettings?.stayLoggedIn !== false) {
-    localStorage.setItem("currentUser", JSON.stringify(user))
-  } else {
-    localStorage.removeItem("currentUser")
+  if (typeof window !== 'undefined') {
+    if (user && user.securitySettings?.stayLoggedIn !== false) {
+      localStorage.setItem("currentUser", JSON.stringify(user))
+    } else {
+      localStorage.removeItem("currentUser")
+    }
   }
 }
 
 export function getCurrentUser(): User | null {
   if (currentUser) return currentUser
+  if (typeof window === 'undefined') return null
   const storedUser = localStorage.getItem("currentUser")
   if (storedUser) {
     currentUser = JSON.parse(storedUser)
@@ -67,7 +73,7 @@ export function updateCurrentUser(updates: Partial<User>) {
     Object.assign(currentUser, updates)
     setCurrentUser(currentUser)
 
-    if (!currentUser.isGuest) {
+    if (!currentUser.isGuest && typeof window !== 'undefined') {
       // Update user in the users array
       const users = getUsers()
       const index = users.findIndex((u) => u.id === currentUser!.id)

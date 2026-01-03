@@ -4,6 +4,7 @@ export interface User {
 }
 
 export const getUsers = (): User[] => {
+  if (typeof window === 'undefined') return []
   const users = localStorage.getItem("users")
   return users ? JSON.parse(users) : []
 }
@@ -11,7 +12,9 @@ export const getUsers = (): User[] => {
 export const saveUser = (user: User) => {
   const users = getUsers()
   users.push(user)
-  localStorage.setItem("users", JSON.stringify(users))
+  if (typeof window !== 'undefined') {
+    localStorage.setItem("users", JSON.stringify(users))
+  }
 }
 
 export const checkUser = (username: string, password: string): boolean => {
@@ -20,13 +23,18 @@ export const checkUser = (username: string, password: string): boolean => {
 }
 
 export const setLoggedInUser = (username: string) => {
-  localStorage.setItem("loggedInUser", username)
+  if (typeof window !== 'undefined') {
+    localStorage.setItem("loggedInUser", username)
+  }
 }
 
 export const getLoggedInUser = (): string | null => {
+  if (typeof window === 'undefined') return null
   return localStorage.getItem("loggedInUser")
 }
 
 export const logout = () => {
-  localStorage.removeItem("loggedInUser")
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem("loggedInUser")
+  }
 }
